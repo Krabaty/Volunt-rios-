@@ -1,0 +1,73 @@
+import datetime
+import calendar
+import sqlite3
+import csv
+
+def get_current_month_dates():
+  """Retorna uma lista com as datas do mês atual."""
+  today = datetime.date.today()
+  first_day_of_month = today.replace(day=1)
+  last_day_of_month = first_day_of_month + datetime.timedelta(days=31)
+  dates = []
+  for day in range(first_day_of_month.day, last_day_of_month.day + 1):
+    dates.append(datetime.date(today.year, today.month, day))
+  cults = ["Ladies", "Stronger"]
+  for cult in cults:
+    dates.append(datetime.date(today.year, today.month, calendar.monthrange(today.year, cult)[1], calendar.monthrange(today.year, cult)[2]))
+  return dates
+
+def get_cults_dates(month):
+  """Retorna uma lista com as datas dos cultos para o mês especificado."""
+  pass
+
+def get_available_volunteers(volunteers, availabilities, max_shifts, ministry):
+  """Retorna uma lista com os voluntários que estão disponíveis para o mês atual."""
+  available_volunteers = []
+  for volunteer, availabilities in zip(volunteers, availabilities):
+    if len(availabilities) <= max_shifts and availabilities[ministry] is True:
+      available_volunteers.append(volunteer)
+  return available_volunteers
+
+def assign_volunteers(available_volunteers, dates, num_volunteers_per_shift):
+  """Atribui um voluntário para cada data."""
+  assignments = {}
+  for date in dates:
+    if len(available_volunteers) >= num_volunteers_per_shift:
+      volunteers = available_volunteers[:num_volunteers_per_shift]
+      for volunteer in volunteers:
+        assignments[date] = volunteer
+      available_volunteers = available_volunteers[num_volunteers_per_shift:]
+    else:
+      # Não há voluntários suficientes disponíveis.
+      print("Aviso: não há voluntários suficientes disponíveis para a escala de %s." % date)
+      for volunteer in available_volunteers:
+        assignments[date] = volunteer
+      available_volunteers = []
+
+  # Atribui os voluntários para os cultos
+  for cult_date in cults:
+    if assignments.get(cult_date) is None:
+      # O culto ainda não está preenchido.
+      for volunteer in available_volunteers:
+        assignments[cult_date] = volunteer
+        available_volunteers.remove(volunteer)
+  return assignments
+
+def print_assignments(assignments):
+  """Imprime as atribuições em formato de tabela."""
+  print("| Data | Ministério | Voluntário |")
+  print("|---|---|---|")
+  for date, volunteer in assignments.items():
+    print("| %s | %s | %s |" % (date, assignments[date], volunteer))
+
+
+assignments = assign_volunteers(available_volunteers, dates, 2)
+
+print_assignments(assignments)
+
+# Exporta as atribuições para um arquivo de texto
+with open("assignments.csv", "w") as f:
+  writer = csv.writer(f)
+  writer.writerow(["Data", "Ministério", "Voluntário"])
+  for date, volunteer in assignments.items():
+    writer.writerow([date, assignments[date], volunteer])
